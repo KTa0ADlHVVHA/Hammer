@@ -1,0 +1,170 @@
+<div id="gameBox"><!-- Hammer image that follows your mouse -->
+<div id="hammer">&nbsp;</div>
+<!-- Character image in the middle -->
+
+<div id="characterContainer"><img id="characterImage" src="https://nadia-and-autumn-are-not-dating.webcomic.ws/files/idle.gif" /></div>
+<!-- Particle effect that appears when you bonk -->
+
+<div id="particle">&nbsp;</div>
+<!-- Sound that plays when you bonk -->
+
+<audio id="hammerSound" preload="auto" src="https://www.dropbox.com/scl/fi/wsiw125tgxe71ove8feko/bonk.mp3?rlkey=vdn5qzpvd7k6samkoq1sc1v5s&amp;raw=1">&nbsp;</audio>
+</div>
+<style type="text/css">/* Main game container */
+  #gameBox {
+    width: 100%;
+    height: 100vh;
+    position: relative;
+    overflow: hidden;
+    background: none;
+    cursor: none; /* Hide the cursor - we'll use the hammer instead */
+    user-select: none;
+  }
+
+  /* Hammer and particle need to move freely */
+  #hammer, #particle {
+    position: absolute;
+    pointer-events: none;
+    background-size: contain;
+    background-repeat: no-repeat;
+    transform: translate(-50%, -50%);
+    z-index: 5;
+  }
+
+  /* Hammer styles */
+  #hammer {
+    width: 128px;
+    height: 128px;
+    background-image: url('https://nadia-and-autumn-are-not-dating.webcomic.ws/files/hammer(1).png');
+  }
+
+  /* Character wrapper */
+  #characterContainer {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: min(80vw, 80vh);
+    height: min(80vw, 80vh);
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    z-index: 2;
+  }
+
+  /* Character image itself */
+  #characterImage {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    pointer-events: none;
+    user-select: none;
+  }
+
+  /* Particle effect styles */
+  #particle {
+    width: 64px;
+    height: 64px;
+    background-image: url('https://nadia-and-autumn-are-not-dating.webcomic.ws/files/particle(1).png');
+    opacity: 0;
+    z-index: 4;
+    transition: opacity 0.3s, transform 0.3s;
+  }
+</style>
+<script>
+  // Grab references to all the important elements
+  const hammer = document.getElementById('hammer');
+  const particle = document.getElementById('particle');
+  const characterImage = document.getElementById('characterImage');
+  const characterContainer = document.getElementById('characterContainer');
+  const hammerSound = document.getElementById('hammerSound');
+  const gameBox = document.getElementById('gameBox');
+
+  let lastClickTime = 0;
+  let returnToIdleTimeout;
+
+  // Keep the hammer following the mouse
+  gameBox.addEventListener('mousemove', (e) => {
+    const rect = gameBox.getBoundingClientRect();
+    hammer.style.left = (e.clientX - rect.left) + 'px';
+    hammer.style.top = (e.clientY - rect.top) + 'px';
+  });
+
+  // Put the character back to idle pose
+  function resetCharacter() {
+    characterImage.src = "https://nadia-and-autumn-are-not-dating.webcomic.ws/files/idle.gif";
+    hammer.style.transform = 'translate(-50%, -50%) rotate(0deg)';
+  }
+
+  // Swing the hammer when clicked
+  function hammerSwing() {
+    hammer.style.transition = 'transform 0.1s ease';
+    hammer.style.transform = 'translate(-50%, -50%) rotate(-45deg)';
+
+    setTimeout(() => {
+      hammer.style.transform = 'translate(-50%, -50%) rotate(0deg)';
+    }, 150);
+  }
+
+  // Show a quick particle burst at the click spot
+  function showParticle(x, y) {
+    particle.style.left = (x - 32) + 'px';
+    particle.style.top = (y - 32) + 'px';
+    particle.style.opacity = 1;
+    particle.style.transform = 'scale(1)';
+
+    setTimeout(() => {
+      particle.style.opacity = 0;
+      particle.style.transform = 'scale(1.5)';
+    }, 100);
+  }
+
+  // Shake the screen a bit for dramatic effect
+  function shakeScreen() {
+    gameBox.style.transition = 'transform 0.05s';
+    gameBox.style.transform = `translate(${Math.random() * 10 - 5}px, ${Math.random() * 10 - 5}px)`;
+
+    setTimeout(() => {
+      gameBox.style.transform = 'translate(0, 0)';
+    }, 100);
+  }
+
+  // Handle clicking inside the game
+  gameBox.addEventListener('click', (e) => {
+    const now = Date.now();
+    const rect = gameBox.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    const charRect = characterContainer.getBoundingClientRect();
+
+    const clickedOnCharacter = (
+      e.clientX >= charRect.left &&
+      e.clientX <= charRect.right &&
+      e.clientY >= charRect.top &&
+      e.clientY <= charRect.bottom
+    );
+
+    if (clickedOnCharacter) {
+      // Bonked the character
+      showParticle(x, y);
+      characterImage.src = "https://nadia-and-autumn-are-not-dating.webcomic.ws/files/hit.gif";
+      hammerSound.playbackRate = 0.9 + Math.random() * 0.2;
+      hammerSound.currentTime = 0;
+      hammerSound.play();
+
+      clearTimeout(returnToIdleTimeout);
+      returnToIdleTimeout = setTimeout(resetCharacter, 1000);
+
+      hammerSwing();
+    } else {
+      // Clicked somewhere else
+      hammerSwing();
+    }
+
+    // If player is clicking rapidly, shake the screen
+    if (now - lastClickTime < 300) {
+      shakeScreen();
+    }
+
+    lastClickTime = now;
+  });
+</script>
